@@ -1,0 +1,93 @@
+## see http://docs.ansible.com/guide_rax.html
+## deployment requires pyrax module - yum install python-pyrax
+
+---
+
+- hosts: localhost
+  gather_facts: False
+  tasks:
+    
+    - name: Add keypair
+      rax_keypair:
+        credentials: ~/.rackspace_cloud_credentials
+        name: sten_ssh_key
+        public_key: "{{ lookup('file', '~/.ssh//id_rsa.pub') }}"
+        region: ORD
+      register: keypair
+ 
+    - debug: var=keypair
+
+    - name: Build Tor server
+      rax:
+        credentials: ~/.rackspace_cloud_credentials
+        name: chilug-ansible-tor
+        flavor: 3
+        region: ORD
+        image: 77e32de8-3304-44f3-b230-436d95fceb19
+        count: 1
+        wait: yes
+        key_name: "{{ keypair.keypair.id }}"
+        networks:
+          - public
+      register: torservers
+
+    - debug: var=torservers
+   
+    - name: Build http server
+      rax:
+        credentials: ~/.rackspace_cloud_credentials
+        name: chilug-ansible-web
+        flavor: 3
+        region: ORD
+        image: f0d3b38b-61e3-47c4-83c7-98c4e7038809
+        count: 1
+        wait: yes
+        key_name: "{{ keypair.keypair.id }}"
+        networks:
+          - public
+      register: webservers
+       
+    - debug: var=webservers
+
+    - name: Group up the tor hosts
+      add_host:
+        hostname: "{{ item.name }}"
+        ansible_ssh_host: "{{ item.accessIPv4 }}"
+        #ansible_ssh_pass: "{{ item.rax_adminpass }}"
+        groupname: raxtor
+      with_items: torservers.instances
+
+    - name: Group up the http hosts
+      add_host:
+        hostname: "{{ item.name }}"
+        ansible_ssh_host: "{{ item.accessIPv4 }}"
+        #ansible_ssh_pass: "{{ item.rax_adminpass }}"
+        groupname: raxweb
+      with_items: webservers.instances
+
+- hosts: raxtor
+  remote_user: root
+  vars:
+    relay_hidden_services_parent_dir: "/var/lib/tor/services"
+    relay_hidden_services: [ { dir: "hidden_ssh",
+                               ports: [ { virtport: "22",
+                               target: "localhost:22" } ] }
+    ]
+  pre_tasks: 
+    - file: name="{{ item }}" state=directory mode=0700
+      with_items:
+        - /var/lib/tor/services 
+        - /var/lib/tor/services/hidden_ssh
+  roles: 
+    - { role: ansible-tor,
+        tor_distribution_release: "wheezy",
+        tor_ExitPolicy: "reject *:*",
+        tor_hidden_services: "{{ relay_hidden_services }}",
+        tor_hidden_services_parent_dir: "{{ relay_hidden_services_parent_dir }}",
+        tor_wait_for_hidden_services: yes,
+      }
+
+- hosts: raxweb
+  remote_user: root
+  roles: 
+    - apache
