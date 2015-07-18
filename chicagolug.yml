@@ -7,11 +7,15 @@
   gather_facts: False
   tasks:
     
+    - name: Get my username
+      command: whoami
+      register: whoami
+
     - name: Add keypair
       rax_keypair:
         credentials: ~/.rackspace_cloud_credentials
-        name: sten_ssh_key
-        public_key: "{{ lookup('file', '~/.ssh//id_rsa.pub') }}"
+        name: "{{ whoami.stdout }}_ssh_key"
+        public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
         region: ORD
       register: keypair
  
