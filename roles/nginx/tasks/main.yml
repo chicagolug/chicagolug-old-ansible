@@ -1,0 +1,11 @@
+---
+
+  - yum: name=nginx state=installed update_cache=yes
+
+  - service: name=nginx state=started enabled=true
+
+  - firewalld: service={{ item }} permanent=true state=enabled
+    notify: reload firewalld
+    with_items: 
+      - http
+      - https

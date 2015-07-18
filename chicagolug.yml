@@ -94,4 +94,6 @@
 - hosts: raxweb
   remote_user: root
   roles: 
-    - apache
+    - nginx
+    - chicago-lug-nginx-config
+    - pelican
