@@ -1,0 +1,13 @@
+--- 
+  
+  - stat: path=/etc/nginx/.git
+    register: nginx_git
+  
+  - debug: var=nginx_git
+
+  - command: "rm -rf /etc/nginx/*"
+    when: nginx_git.stat.exists == False
+
+  - git: 
+      repo: https://github.com/chicagolug/chicagolug-nginx
+      dest: /etc/nginx

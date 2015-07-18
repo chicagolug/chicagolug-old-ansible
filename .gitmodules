@@ -1,3 +1,6 @@
 [submodule "roles/ansible-tor"]
 	path = roles/ansible-tor
 	url = https://github.com/david415/ansible-tor
+[submodule "roles/role-epel"]
+	path = roles/role-epel
+	url = https://github.com/goozbach-ansible/role-epel
