@@ -4,3 +4,6 @@
 [submodule "roles/role-epel"]
 	path = roles/role-epel
 	url = https://github.com/goozbach-ansible/role-epel
+[submodule "roles/ansible-debian-mediagoblin"]
+	path = roles/ansible-debian-mediagoblin
+	url = https://github.com/Simonft/ansible-debian-mediagoblin
