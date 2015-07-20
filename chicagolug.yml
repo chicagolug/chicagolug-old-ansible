@@ -35,7 +35,21 @@
           - public
       register: torservers
 
-    - debug: var=torservers
+    - name: Build Mediagoblin server
+      rax:
+        credentials: ~/.rackspace_cloud_credentials
+        name: chilug-ansible-mediagoblin
+        flavor: 3
+        region: ORD
+        image: 77e32de8-3304-44f3-b230-436d95fceb19
+        count: 1
+        wait: yes
+        key_name: "{{ keypair.keypair.id }}"
+        networks:
+          - public
+      register: mgservers
+
+    - debug: var=mgservers
    
     - name: Build http server
       rax:
@@ -57,15 +71,20 @@
       add_host:
         hostname: "{{ item.name }}"
         ansible_ssh_host: "{{ item.accessIPv4 }}"
-        #ansible_ssh_pass: "{{ item.rax_adminpass }}"
         groupname: raxtor
       with_items: torservers.instances
+
+    - name: Group up the MG hosts
+      add_host:
+        hostname: "{{ item.name }}"
+        ansible_ssh_host: "{{ item.accessIPv4 }}"
+        groupname: raxmg
+      with_items: mgservers.instances
 
     - name: Group up the http hosts
       add_host:
         hostname: "{{ item.name }}"
         ansible_ssh_host: "{{ item.accessIPv4 }}"
-        #ansible_ssh_pass: "{{ item.rax_adminpass }}"
         groupname: raxweb
       with_items: webservers.instances
 
@@ -97,3 +116,8 @@
     - nginx
     - chicago-lug-nginx-config
     - pelican
+
+- hosts: raxmg
+  remote_user: root
+  roles: 
+    - ansible-debian-mediagoblin
