@@ -116,8 +116,3 @@
     - nginx
     - chicago-lug-nginx-config
     - pelican
-
-- hosts: raxmg
-  remote_user: root
-  roles: 
-    - ansible-debian-mediagoblin
