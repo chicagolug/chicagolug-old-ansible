@@ -21,36 +21,6 @@
  
     - debug: var=keypair
 
-    - name: Build Tor server
-      rax:
-        credentials: ~/.rackspace_cloud_credentials
-        name: chilug-ansible-tor
-        flavor: 3
-        region: ORD
-        image: 77e32de8-3304-44f3-b230-436d95fceb19
-        count: 1
-        wait: yes
-        key_name: "{{ keypair.keypair.id }}"
-        networks:
-          - public
-      register: torservers
-
-    - name: Build Mediagoblin server
-      rax:
-        credentials: ~/.rackspace_cloud_credentials
-        name: chilug-ansible-mediagoblin
-        flavor: 3
-        region: ORD
-        image: 77e32de8-3304-44f3-b230-436d95fceb19
-        count: 1
-        wait: yes
-        key_name: "{{ keypair.keypair.id }}"
-        networks:
-          - public
-      register: mgservers
-
-    - debug: var=mgservers
-   
     - name: Build http server
       rax:
         credentials: ~/.rackspace_cloud_credentials
@@ -67,20 +37,6 @@
        
     - debug: var=webservers
 
-    - name: Group up the tor hosts
-      add_host:
-        hostname: "{{ item.name }}"
-        ansible_ssh_host: "{{ item.accessIPv4 }}"
-        groupname: raxtor
-      with_items: torservers.instances
-
-    - name: Group up the MG hosts
-      add_host:
-        hostname: "{{ item.name }}"
-        ansible_ssh_host: "{{ item.accessIPv4 }}"
-        groupname: raxmg
-      with_items: mgservers.instances
-
     - name: Group up the http hosts
       add_host:
         hostname: "{{ item.name }}"
@@ -88,31 +44,8 @@
         groupname: raxweb
       with_items: webservers.instances
 
-- hosts: raxtor
-  remote_user: root
-  vars:
-    relay_hidden_services_parent_dir: "/var/lib/tor/services"
-    relay_hidden_services: [ { dir: "hidden_ssh",
-                               ports: [ { virtport: "22",
-                               target: "localhost:22" } ] }
-    ]
-  pre_tasks: 
-    - file: name="{{ item }}" state=directory mode=0700
-      with_items:
-        - /var/lib/tor/services 
-        - /var/lib/tor/services/hidden_ssh
-  roles: 
-    - { role: ansible-tor,
-        tor_distribution_release: "wheezy",
-        tor_ExitPolicy: "reject *:*",
-        tor_hidden_services: "{{ relay_hidden_services }}",
-        tor_hidden_services_parent_dir: "{{ relay_hidden_services_parent_dir }}",
-        tor_wait_for_hidden_services: yes,
-      }
-
 - hosts: raxweb
   remote_user: root
   roles: 
     - nginx
     - chicago-lug-nginx-config
-    - pelican
