@@ -1,0 +1,11 @@
+# Create a user account
+---
+
+- name: Create a user account for regular logins
+  user:
+    name: "{{ user_name }}"
+    create_home: yes
+    home: "/home/{{ user_name }}"
+    password: "{{ user_password }}"
+    update_password: always
+    state: present
